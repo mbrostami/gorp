@@ -17,6 +17,8 @@ const (
 	DebugColor   = "\033[0;36m%s\033[0m"
 )
 
+type Stack []string
+
 func main() {
 	args := os.Args
 	if len(args) < 2 {
@@ -47,6 +49,7 @@ func executionLoop(prefix []string) {
 		cmd := exec.Command(name, argsNew...)
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 		cmd.Env = os.Environ()
+		cmd.Dir, _ = os.Getwd()
 		err := cmd.Run()
 		if err != nil {
 			fmt.Printf("error: "+ErrorColor+"\n", err)

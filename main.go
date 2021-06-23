@@ -36,7 +36,7 @@ func executionLoop(prefix []string) {
 	}
 
 	cmdScanner := bufio.NewScanner(os.Stdin)
-	fmt.Printf(WarningColor+" "+InfoColor+" > ", name, args)
+	newline(name, args)
 	for cmdScanner.Scan() {
 		if cmdScanner.Text() == "\\q" {
 			return
@@ -54,6 +54,14 @@ func executionLoop(prefix []string) {
 		if err != nil {
 			fmt.Printf("error: "+ErrorColor+"\n", err)
 		}
+		newline(name, args)
+	}
+}
+
+func newline(name string, args []string) {
+	if len(args) == 0 {
+		fmt.Printf(WarningColor+" > ", name)
+	} else {
 		fmt.Printf(WarningColor+" "+InfoColor+" > ", name, args)
 	}
 }

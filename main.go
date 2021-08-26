@@ -1,12 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/c-bata/go-prompt"
 )
 
 const (
@@ -17,15 +18,59 @@ const (
 	DebugColor   = "\033[0;36m%s\033[0m"
 )
 
-type Stack []string
+type completer struct {
+	suggestions map[string][]prompt.Suggest
+	prefix      string
+}
+
+func NewCompleter(prefix string) completer {
+	c := new(completer)
+	c.prefix = prefix
+	c.suggestions = make(map[string][]prompt.Suggest)
+	c.suggestions[prefix] = []prompt.Suggest{
+		{
+			Text: "status",
+		},
+		{
+			Text: "help",
+		},
+		{
+			Text: "commit",
+		},
+	}
+	return *c
+}
+
+func (c completer) Completer(d prompt.Document) []prompt.Suggest {
+	return prompt.FilterFuzzy(c.suggestions[c.prefix], d.GetWordBeforeCursor(), true)
+}
+
+var quit = prompt.KeyBind{
+	Key: prompt.ControlC,
+	Fn: func(b *prompt.Buffer) {
+		os.Exit(0) // log.Fatal doesn't work, but panic somehow avoids this issue...
+	},
+}
+var fquit = prompt.KeyBind{
+	Key: prompt.ControlD,
+	Fn: func(b *prompt.Buffer) {
+		os.Exit(0) // log.Fatal doesn't work, but panic somehow avoids this issue...
+	},
+}
 
 func main() {
 	args := os.Args
 	if len(args) < 2 {
 		log.Fatal("need at least one argument")
 	}
-
 	executionLoop(args[1:])
+}
+
+var removePrevWord = prompt.KeyBind{
+	Key: prompt.ControlA,
+	Fn: func(b *prompt.Buffer) {
+		prompt.DeleteWord(b)
+	},
 }
 
 func executionLoop(prefix []string) {
@@ -35,15 +80,13 @@ func executionLoop(prefix []string) {
 		args = prefix[1:]
 	}
 
-	cmdScanner := bufio.NewScanner(os.Stdin)
-	newline(name, args)
-	for cmdScanner.Scan() {
-		if cmdScanner.Text() == "\\q" {
-			return
-		}
+	history := prompt.NewHistory()
+	p := prompt.New(func(in string) {
+		t := in
 		var txt []string
-		if cmdScanner.Text() != "" {
-			txt = strings.Split(cmdScanner.Text(), " ")
+		if t != "" {
+			txt = strings.Split(t, " ")
+			history.Add(t)
 		}
 		argsNew := append(args, txt...)
 		cmd := exec.Command(name, argsNew...)
@@ -54,14 +97,20 @@ func executionLoop(prefix []string) {
 		if err != nil {
 			fmt.Printf("error: "+ErrorColor+"\n", err)
 		}
-		newline(name, args)
-	}
+	}, NewCompleter(name).Completer,
+		prompt.OptionAddKeyBind(quit),
+		prompt.OptionAddKeyBind(fquit),
+		prompt.OptionPrefix(newline(name, args)),
+		prompt.OptionPrefixTextColor(prompt.Purple),
+		prompt.OptionAddKeyBind(removePrevWord),
+	)
+	p.Run()
 }
 
-func newline(name string, args []string) {
+func newline(name string, args []string) string {
 	if len(args) == 0 {
-		fmt.Printf(WarningColor+" > ", name)
+		return fmt.Sprintf("%s > ", name)
 	} else {
-		fmt.Printf(WarningColor+" "+InfoColor+" > ", name, args)
+		return fmt.Sprintf("%s %s > ", name, args)
 	}
 }

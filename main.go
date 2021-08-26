@@ -28,15 +28,15 @@ func NewCompleter(prefix string) completer {
 	c.prefix = prefix
 	c.suggestions = make(map[string][]prompt.Suggest)
 	c.suggestions[prefix] = []prompt.Suggest{
-		{
-			Text: "status",
-		},
-		{
-			Text: "help",
-		},
-		{
-			Text: "commit",
-		},
+		//{
+		//	Text: "status",
+		//},
+		//{
+		//	Text: "help",
+		//},
+		//{
+		//	Text: "commit",
+		//},
 	}
 	return *c
 }
@@ -76,9 +76,7 @@ var removePrevWord = prompt.KeyBind{
 func executionLoop(prefix []string) {
 	name := prefix[0]
 	var args []string
-	if len(prefix) > 1 {
-		args = prefix[1:]
-	}
+	args = append(args, prefix[0:]...)
 
 	history := prompt.NewHistory()
 	p := prompt.New(func(in string) {
@@ -88,8 +86,11 @@ func executionLoop(prefix []string) {
 			txt = strings.Split(t, " ")
 			history.Add(t)
 		}
-		argsNew := append(args, txt...)
-		cmd := exec.Command(name, argsNew...)
+		var argsNew []string
+		args = append(args, txt...)
+		argsNew = append(argsNew, "-c")
+		argsNew = append(argsNew, strings.Join(args[:], " "))
+		cmd := exec.Command("bash", argsNew...)
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 		cmd.Env = os.Environ()
 		cmd.Dir, _ = os.Getwd()
@@ -100,7 +101,7 @@ func executionLoop(prefix []string) {
 	}, NewCompleter(name).Completer,
 		prompt.OptionAddKeyBind(quit),
 		prompt.OptionAddKeyBind(fquit),
-		prompt.OptionPrefix(newline(name, args)),
+		prompt.OptionPrefix(newline(name, args[1:])),
 		prompt.OptionPrefixTextColor(prompt.Purple),
 		prompt.OptionAddKeyBind(removePrevWord),
 	)

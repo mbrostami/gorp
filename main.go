@@ -27,22 +27,21 @@ func NewCompleter(prefix string) completer {
 	c := new(completer)
 	c.prefix = prefix
 	c.suggestions = make(map[string][]prompt.Suggest)
-	c.suggestions[prefix] = []prompt.Suggest{
-		//{
-		//	Text: "status",
-		//},
-		//{
-		//	Text: "help",
-		//},
-		//{
-		//	Text: "commit",
-		//},
+	c.suggestions["git"] = []prompt.Suggest{
+		{Text: "status"},
+		{Text: "push"},
+		{Text: "fetch"},
+		{Text: "rebase "},
+		{Text: "checkout -b "},
+		{Text: "checkout master"},
+		{Text: "checkout develop"},
+		{Text: "commit -m "},
 	}
 	return *c
 }
 
 func (c completer) Completer(d prompt.Document) []prompt.Suggest {
-	return prompt.FilterFuzzy(c.suggestions[c.prefix], d.GetWordBeforeCursor(), true)
+	return prompt.FilterHasPrefix(c.suggestions[c.prefix], d.GetWordBeforeCursor(), true)
 }
 
 var quit = prompt.KeyBind{
@@ -85,9 +84,9 @@ func executionLoop(prefix []string) {
 		if t != "" {
 			txt = strings.Split(t, " ")
 			history.Add(t)
+			args = append(args, txt...)
 		}
 		var argsNew []string
-		args = append(args, txt...)
 		argsNew = append(argsNew, "-c")
 		argsNew = append(argsNew, strings.Join(args[:], " "))
 		cmd := exec.Command("bash", argsNew...)
@@ -99,11 +98,23 @@ func executionLoop(prefix []string) {
 			fmt.Printf("error: "+ErrorColor+"\n", err)
 		}
 	}, NewCompleter(name).Completer,
-		prompt.OptionAddKeyBind(quit),
-		prompt.OptionAddKeyBind(fquit),
 		prompt.OptionPrefix(newline(args)),
 		prompt.OptionPrefixTextColor(prompt.Purple),
+		prompt.OptionAddKeyBind(quit),
+		prompt.OptionAddKeyBind(fquit),
 		prompt.OptionAddKeyBind(removePrevWord),
+		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
+			ASCIICode: []byte{0x1b, 0x62},
+			Fn:        prompt.GoLeftWord,
+		}),
+		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
+			ASCIICode: []byte{0x1b, 0x66},
+			Fn:        prompt.GoRightWord,
+		}),
+		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
+			ASCIICode: []byte{0x1b, 0x7f},
+			Fn:        prompt.DeleteWord,
+		}),
 	)
 	p.Run()
 }

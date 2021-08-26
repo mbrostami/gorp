@@ -101,17 +101,13 @@ func executionLoop(prefix []string) {
 	}, NewCompleter(name).Completer,
 		prompt.OptionAddKeyBind(quit),
 		prompt.OptionAddKeyBind(fquit),
-		prompt.OptionPrefix(newline(name, args[1:])),
+		prompt.OptionPrefix(newline(args)),
 		prompt.OptionPrefixTextColor(prompt.Purple),
 		prompt.OptionAddKeyBind(removePrevWord),
 	)
 	p.Run()
 }
 
-func newline(name string, args []string) string {
-	if len(args) == 0 {
-		return fmt.Sprintf("%s > ", name)
-	} else {
-		return fmt.Sprintf("%s %s > ", name, args)
-	}
+func newline(args []string) string {
+	return fmt.Sprintf("%s > ", strings.Join(args[:], " "))
 }

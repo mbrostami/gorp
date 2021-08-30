@@ -7,5 +7,5 @@ func New(command string) func(d prompt.Document) []prompt.Suggest {
 	case "git":
 		return gitSuggestions
 	}
-	return nil
+	return func(d prompt.Document) []prompt.Suggest { return nil }
 }

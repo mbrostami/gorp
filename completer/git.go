@@ -6,6 +6,7 @@ func gitSuggestions(d prompt.Document) []prompt.Suggest {
 	suggestions := []prompt.Suggest{
 		{Text: "status"},
 		{Text: "push"},
+		{Text: "pull"},
 		{Text: "fetch"},
 		{Text: "rebase "},
 		{Text: "checkout -b "},
